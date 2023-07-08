@@ -14,7 +14,7 @@ app.listen(process.env.PORT); // Keeps bot online
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 
 const FILE_PATH = 'counters.json';
-const PREFIX = '>';
+const PREFIX = '>>';
 
 
 const client = new Client({
@@ -32,20 +32,40 @@ client.on('ready', async () => {
 	console.log("Cowntando \n*happy cow noises*!")
 });
 
+// Init "database"
+const data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'))
+
 client.on('messageCreate', async (message) => {
 	let msg = message.content;
 	let channel = message.channel;
 
 	if(message.author.bot) return;
 
+
+	// Made in 5 seconds, i fix later
+	let index = 0;
+	data.forEach((obj) => {
+		let name = obj.name.toLowerCase();
+		let check = msg.toLowerCase().includes(name);
+		
+		if(check) {
+			let item = data[index];
+			data[index]['counting'] += 1;
+			fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));	
+			let embed = new EmbedBuilder().setColor(0xca1773)
+				.setDescription(`${item['name']} **+1**! \n\n${item['name']} ― **${item['counting']}**`);
+			channel.send({ embeds: [embed] });
+		}
+
+		index++;
+	});
+	
 	if(msg.startsWith(PREFIX)) {
 		// Command args
 		let command = msg.split(PREFIX)[1].split(' ');
 		let cmd = command[0].toLowerCase();
 		let args = command.slice(1);
 
-		// Init "database"
-		let data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'))
 
 		// Init embed
 		let embed = new EmbedBuilder();
@@ -86,7 +106,7 @@ client.on('messageCreate', async (message) => {
 				data.push({
 					name: title,
 					counting: 0
-				})
+				});
 				// fs.writeFileSync(FILE_PATH, JSON.stringify(obj, null, 2));
 				fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
 
@@ -114,13 +134,14 @@ client.on('messageCreate', async (message) => {
 
 				let indexd = args[0]-1;
 				let counter = parseInt(args[1]) || 1;
+				let item = data[indexd];
 
-				if(!data[indexd]) {
-					embed.setDescription(`Essa nota não existe! \nAs notas atuais vão de **1** - **${data.length}**`);
+				if(!item) {
+					embed.setDescription(`Essa contador não existe! \nAs contadores atuais vão de **1** - **${data.length}**`);
 					break;
 				}
 
-				data[indexd]['counting'] += counter;
+				item['counting'] += counter;
 				fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
 
 
@@ -128,7 +149,7 @@ client.on('messageCreate', async (message) => {
 				if(counter > 0)
 					def = '+' + counter; // Add or not aaaah you get the idea
 
-				embed.setDescription(`${data[indexd]['name']} **${def}**!`);	
+				embed.setDescription(`${item['name']} **${def}**! \n${item['name']} ― **${item['counting']}**`);	
 				break;
 
 
@@ -142,19 +163,6 @@ client.on('messageCreate', async (message) => {
 
 	}
 });
-
-
-// let data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'))
-
-// 	let obj = [
-// 		{
-// 			name: "john",
-// 			counting: 3
-// 		}
-// 	]
-// 	fs.writeFileSync(FILE_PATH, JSON.stringify(obj, null, 2));
-// 	const entryExists = jsonData.some(obj => obj.name === newName);
-
 
 
 
